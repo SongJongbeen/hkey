@@ -80,5 +80,6 @@ with gr.Blocks(title="Multi-LLM Comparator", theme=gr.themes.Soft()) as demo:
 if __name__ == "__main__":
     # 로컬에서 7860 포트로 실행됨
     demo.launch(
-        share=True,
+        server_name="0.0.0.0",
+        server_port=int(os.environ.get("PORT", 7860))
     )
