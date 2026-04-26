@@ -16,7 +16,7 @@ client = AsyncOpenAI(
 
 # 2. 사용할 모델 리스트 (OpenRouter 모델 ID 기준)
 MODELS = {
-    "OpenAI (GPT 5.2)": "openai/gpt-5.2",
+    "OpenAI (GPT 5.5)": "openai/gpt-5.5",
     "Anthropic (Claude 4.6 Sonnet)": "anthropic/claude-sonnet-4.6",
     "Google (Gemini 3.1 Pro)": "google/gemini-3.1-pro-preview",
     "DeepSeek (DeepSeek 3.2)": "deepseek/deepseek-v3.2"
