@@ -1,28 +1,28 @@
 import gradio as gr
 import asyncio
 import os
+import pandas as pd
+import tempfile
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# 1. OpenRouter API 키 설정 (직접 입력하거나 환경변수 사용)
 OPENROUTER_API_KEY = os.getenv("openrouter_api_key")
 
-# 비동기 클라이언트 설정
 client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=OPENROUTER_API_KEY,
 )
 
-# 2. 사용할 모델 리스트 (OpenRouter 모델 ID 기준)
 MODELS = {
-    "OpenAI (GPT 5.2)": "openai/gpt-5.2",
+    "OpenAI (GPT 5.6 Sol)": "openai/gpt-5.6-sol",
     "Anthropic (Claude 4.6 Sonnet)": "anthropic/claude-sonnet-4.6",
     "Google (Gemini 3.1 Pro)": "google/gemini-3.1-pro-preview",
-    "DeepSeek (DeepSeek 3.2)": "deepseek/deepseek-v3.2"
+    "Kimi K3": "moonshotai/kimi-k3",
+    "DeepSeek V4 Pro": "deepseek/deepseek-v4-pro"
 }
 
-# 3. 개별 모델에 요청을 보내는 비동기 함수
 async def fetch_response(model_id, prompt):
     try:
         response = await client.chat.completions.create(
@@ -34,34 +34,45 @@ async def fetch_response(model_id, prompt):
     except Exception as e:
         return f"⚠️ 오류 발생: {str(e)}"
 
-# 4. Gradio에서 호출될 메인 실행 함수
 async def generate_all(prompt):
-
-    # 비동기로 동시에 5개 모델 호출
+    print(MODELS.values())
+    print(prompt)
     tasks = [fetch_response(model_id, prompt) for model_id in MODELS.values()]
     results = await asyncio.gather(*tasks)
-
-    # Gradio의 5개 출력창에 각각 매핑되어 반환됨
+    print(results)
     return results
 
-# 5. Gradio UI 구성
-with gr.Blocks(title="Multi-LLM Comparator", theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# 고전번역 특수과제 연구")
-    gr.Markdown("송혁기")
+def export_to_excel(prompt, res1, res2, res3, res4):
+    data = {
+        "구분": ["사용자 프롬프트"] + list(MODELS.keys()),
+        "내용": [prompt, res1, res2, res3, res4]
+    }
+    df = pd.DataFrame(data)
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+    df.to_excel(temp_file.name, index=False, engine='openpyxl')
+
+    return temp_file.name
+
+with gr.Blocks(title="한문고전번역특수과제연구") as demo:
+    gr.Markdown("# 한문 고전번역 특수과제 연구1")
+    gr.Markdown("오류 발생 시 1041489@gmail.com 으로 문의주세요.")
 
     with gr.Row():
         user_input = gr.Textbox(
-            label="프롬프트 입력", 
-            lines=5, 
+            label="프롬프트 입력",
+            lines=5,
             placeholder="모델들에게 물어볼 질문이나 지시사항을 입력하세요..."
         )
 
     with gr.Row():
-        submit_btn = gr.Button("동시 생성 ⚡", variant="primary")
+        submit_btn = gr.Button("결과물 생성", variant="primary")
+        excel_btn = gr.Button("엑셀로 내보내기", variant="secondary")
 
-    gr.Markdown("### 🤖 모델별 출력 결과")
+    excel_download = gr.File(label="다운로드할 엑셀 파일", visible=False)
 
-    # 4개 모델의 출력창을 깔끔하게 배치 (위 2개, 아래 2개)
+    gr.Markdown("### 모델별 출력 결과")
+
     outputs = []
     with gr.Row():
         for model_name in list(MODELS.keys())[:2]:
@@ -70,15 +81,20 @@ with gr.Blocks(title="Multi-LLM Comparator", theme=gr.themes.Soft()) as demo:
         for model_name in list(MODELS.keys())[2:]:
             outputs.append(gr.Textbox(label=model_name, lines=15, interactive=False))
 
-    # 버튼 클릭 시 이벤트 연결
     submit_btn.click(
         fn=generate_all,
         inputs=user_input,
         outputs=outputs
     )
 
-if __name__ == "__main__":
-    # 로컬에서 7860 포트로 실행됨
-    demo.launch(
-        share=True,
+    excel_btn.click(
+        fn=export_to_excel,
+        inputs=[user_input] + outputs,
+        outputs=excel_download
+    ).then(
+        fn=lambda: gr.update(visible=True),
+        outputs=excel_download
     )
+
+if __name__ == "__main__":
+    demo.launch(share=True, theme=gr.themes.Soft())
