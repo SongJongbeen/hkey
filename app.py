@@ -42,10 +42,10 @@ async def generate_all(prompt):
     print(results)
     return results
 
-def export_to_excel(prompt, res1, res2, res3, res4):
+def export_to_excel(prompt, *results):
     data = {
         "구분": ["사용자 프롬프트"] + list(MODELS.keys()),
-        "내용": [prompt, res1, res2, res3, res4]
+        "내용": [prompt, *results]
     }
     df = pd.DataFrame(data)
 
@@ -54,7 +54,7 @@ def export_to_excel(prompt, res1, res2, res3, res4):
 
     return temp_file.name
 
-with gr.Blocks(title="한문고전번역특수과제연구") as demo:
+with gr.Blocks(title="한문고전번역특수과제연구", theme=gr.themes.Soft()) as demo:
     gr.Markdown("# 한문 고전번역 특수과제 연구1")
     gr.Markdown("오류 발생 시 1041489@gmail.com 으로 문의주세요.")
 
@@ -97,4 +97,8 @@ with gr.Blocks(title="한문고전번역특수과제연구") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=True, theme=gr.themes.Soft())
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.environ.get("PORT", 7860)),
+        share=True,
+    )
